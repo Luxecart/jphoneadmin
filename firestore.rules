@@ -1,0 +1,122 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             (request.auth.token.get('admin', false) == true ||
+              exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+              request.auth.token.get('email', '') == 'beyondhorizons121@gmail.com');
+    }
+
+    function isVerifiedPhone(claimedPhone) {
+      return isAuthenticated() &&
+             request.auth.token.firebase.sign_in_provider == 'phone' &&
+             request.auth.token.phone_number == claimedPhone;
+    }
+
+    // Administrators registry (Managed strictly server-side)
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Server-side / CLI provisioning only
+    }
+
+    // User Private Account Profiles (Protected against client privilege escalation)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) &&
+                       request.resource.data.keys().hasAll(['displayName', 'phoneNumber', 'updatedAt']) &&
+                       (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false) &&
+                       (!('isPremium' in request.resource.data) || request.resource.data.isPremium == false);
+      allow update: if (isOwner(userId) &&
+                        (!('isAdmin' in request.resource.data) || request.resource.data.isAdmin == false) &&
+                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isPremium', 'premiumPlanId', 'premiumExpiryDate', 'isAdmin'])) ||
+                       (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adminNotes', 'isPremium', 'premiumPlanId', 'premiumExpiryDate', 'updatedAt']));
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Admin-controlled Premium Plans (Priority 3)
+    match /premium_plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Authoritative Subscription Entitlements (Priority 3)
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Public & Consenting Caller ID Directory
+    match /caller_id_profiles/{userId} {
+      allow read: if (resource.data.visibility == 'PUBLIC' && resource.data.consentGiven == true) || isAdmin();
+
+      allow create, update: if (isOwner(userId) &&
+                                request.resource.data.uid == userId &&
+                                request.resource.data.isVerified == true &&
+                                request.resource.data.displayName is string &&
+                                request.resource.data.displayName.size() >= 2 &&
+                                request.resource.data.displayName.size() <= 60 &&
+                                (('normalizedPhoneNumber' in request.resource.data && request.resource.data.normalizedPhoneNumber is string) ||
+                                 ('normalizedPhone' in request.resource.data && request.resource.data.normalizedPhone is string))) ||
+                               (isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['moderationStatus', 'adminNotes', 'visibility', 'updatedAt']));
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    // Community Spam Reports
+    match /spam_reports/{reportId} {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+                       request.resource.data.keys().hasAll(['phoneNumber', 'category', 'createdAt']);
+      allow update, delete: if isAdmin();
+    }
+
+    // Administrative Caller ID Reports & Moderation
+    match /admin_reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Immutable Administrative Audit Logs (Append-Only)
+    match /admin_audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() &&
+                       request.resource.data.adminUid == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['action', 'targetId', 'timestamp']);
+      allow update, delete: if false; // Immutable audit trail
+    }
+
+    // Push Notification Broadcast Queue
+    match /admin_notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() &&
+                               request.resource.data.keys().hasAll(['title', 'body', 'topic', 'createdAt']);
+      allow delete: if isAdmin();
+    }
+
+    // App Configuration & Update Announcements
+    match /app_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // User Device FCM Tokens
+    match /users/{userId}/fcm_tokens/{tokenId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    // Block all other collections by default (Zero-Trust)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "JPhone Web Admin Panel",
+  "description": "Professional web administration dashboard and diagnostic suite for JPhone Android app, featuring user management, subscription tiers, push notifications, and remote app configuration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

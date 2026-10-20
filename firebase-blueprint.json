@@ -1,0 +1,443 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "JPhone end-user account details and subscription status",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user identifier matching Firebase Auth UID"
+        },
+        "email": {
+          "type": "string",
+          "description": "Registered email address"
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "description": "Indicates whether user email has been verified"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User phone number in E.164 international format"
+        },
+        "phoneVerified": {
+          "type": "boolean",
+          "description": "Indicates whether phone number was verified via SMS OTP"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name or full name"
+        },
+        "subscriptionTier": {
+          "type": "string",
+          "enum": ["free", "premium"],
+          "description": "Authoritative membership tier (FREE or PREMIUM)"
+        },
+        "subscriptionExpiry": {
+          "type": "string",
+          "description": "ISO timestamp of premium subscription expiration"
+        },
+        "isSuspended": {
+          "type": "boolean",
+          "description": "Account suspension status"
+        },
+        "suspendedReason": {
+          "type": "string",
+          "description": "Reason logged by admin for suspension"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Account registration timestamp"
+        },
+        "lastSeenAt": {
+          "type": "string",
+          "description": "Last authenticated activity timestamp"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal confidential staff notes regarding this user"
+        }
+      },
+      "required": ["id", "subscriptionTier", "isSuspended"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator registry with verified role access",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator"
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified administrator email"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["super_admin", "admin", "moderator"],
+          "description": "Access control tier"
+        },
+        "assignedBy": {
+          "type": "string",
+          "description": "UID of the granting super administrator or bootstrap script"
+        },
+        "assignedAt": {
+          "type": "string",
+          "description": "Timestamp when admin role was conferred"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Active status of administrative privileges"
+        }
+      },
+      "required": ["id", "email", "role", "active"]
+    },
+    "Plan": {
+      "title": "Plan",
+      "description": "Subscription tier definitions and pricing models",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the plan"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of plan"
+        },
+        "code": {
+          "type": "string",
+          "description": "Internal sku or plan identifier"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the plan"
+        },
+        "currency": {
+          "type": "string",
+          "description": "ISO currency code"
+        },
+        "durationDays": {
+          "type": "number",
+          "description": "Duration in days (e.g., 30 for monthly, 365 for annual)"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed explanation of tier features"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Availability for checkout"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Admin UID who last updated the plan"
+        }
+      },
+      "required": ["id", "name", "code", "price", "durationDays", "isActive"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "Membership grants, payment records, and entitlements",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Subscription transaction ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Target user UID"
+        },
+        "planId": {
+          "type": "string",
+          "description": "Referenced plan ID"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "expired", "revoked", "pending_verification"],
+          "description": "Current entitlement state"
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["free", "premium"],
+          "description": "Granted membership tier"
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Subscription start ISO timestamp"
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "Subscription expiration ISO timestamp"
+        },
+        "grantReason": {
+          "type": "string",
+          "description": "Reason for complimentary or promotional grant"
+        },
+        "grantedByAdminId": {
+          "type": "string",
+          "description": "Admin UID who granted access, if manual"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment gateway or method (e.g. google_play, stripe, complimentary)"
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["verified", "pending", "failed", "complimentary"],
+          "description": "Payment verification status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp"
+        }
+      },
+      "required": ["id", "userId", "status", "tier", "startDate", "expiryDate"]
+    },
+    "AppSetting": {
+      "title": "AppSetting",
+      "description": "Remote configuration parameters for JPhone Android client",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Document ID, usually 'general' or 'remote_config'"
+        },
+        "appName": {
+          "type": "string",
+          "description": "Branded application display name"
+        },
+        "supportEmail": {
+          "type": "string",
+          "description": "Official customer support email"
+        },
+        "supportPhoneWhatsApp": {
+          "type": "string",
+          "description": "Support WhatsApp number in E.164 international format"
+        },
+        "whatsAppEnabled": {
+          "type": "boolean",
+          "description": "Controls visibility of WhatsApp support button in Android app"
+        },
+        "whatsAppDefaultMessage": {
+          "type": "string",
+          "description": "Pre-filled support message template for WhatsApp"
+        },
+        "maintenanceMode": {
+          "type": "boolean",
+          "description": "When true, Android app shows maintenance banner and restricts requests"
+        },
+        "maintenanceBypassKey": {
+          "type": "string",
+          "description": "Secret token allowing staff or beta testers to bypass maintenance screen"
+        },
+        "maintenanceMessage": {
+          "type": "string",
+          "description": "User-facing message during maintenance windows"
+        },
+        "minSupportedVersion": {
+          "type": "string",
+          "description": "Minimum app version code required to operate"
+        },
+        "latestVersion": {
+          "type": "string",
+          "description": "Latest publicly released app version code"
+        },
+        "downloadUrl": {
+          "type": "string",
+          "description": "Official update URL (Google Play Store link or verified APK)"
+        },
+        "forceUpdate": {
+          "type": "boolean",
+          "description": "Forces update blocking UI when app version < minSupportedVersion"
+        },
+        "adMobAppId": {
+          "type": "string",
+          "description": "Google AdMob Android App ID"
+        },
+        "adMobBannerId": {
+          "type": "string",
+          "description": "AdMob Banner ad unit identifier"
+        },
+        "adMobInterstitialId": {
+          "type": "string",
+          "description": "AdMob Interstitial ad unit identifier"
+        },
+        "adMobRewardedId": {
+          "type": "string",
+          "description": "AdMob Rewarded video ad unit identifier"
+        },
+        "appLovinKey": {
+          "type": "string",
+          "description": "AppLovin SDK configuration key"
+        },
+        "unityGameId": {
+          "type": "string",
+          "description": "Unity Ads Game ID"
+        },
+        "adsEnabled": {
+          "type": "boolean",
+          "description": "Global master switch for advertisements"
+        },
+        "testAdsMode": {
+          "type": "boolean",
+          "description": "Forces test ad unit IDs to avoid AdMob policy violations"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last modification"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Admin UID who saved changes"
+        }
+      },
+      "required": ["id", "appName", "maintenanceMode", "minSupportedVersion", "latestVersion"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Push notification broadcasts sent to JPhone users",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Broadcast message ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Push notification headline"
+        },
+        "body": {
+          "type": "string",
+          "description": "Push notification body copy"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Optional image preview attachment URL"
+        },
+        "targetAudience": {
+          "type": "string",
+          "enum": ["all", "free_users", "premium_users", "topic_announcements"],
+          "description": "Target audience segment"
+        },
+        "deepLink": {
+          "type": "string",
+          "description": "URI scheme destination (e.g., jphone://premium, jphone://settings)"
+        },
+        "sentAt": {
+          "type": "string",
+          "description": "Broadcast dispatch timestamp"
+        },
+        "sentByAdminId": {
+          "type": "string",
+          "description": "Admin UID who authorized the dispatch"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "scheduled", "draft", "failed"],
+          "description": "Delivery status"
+        },
+        "deliveryCount": {
+          "type": "number",
+          "description": "Estimated recipient count delivered"
+        }
+      },
+      "required": ["id", "title", "body", "targetAudience", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable security records of administrative interventions",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique audit log identifier"
+        },
+        "adminId": {
+          "type": "string",
+          "description": "UID of acting administrator"
+        },
+        "adminEmail": {
+          "type": "string",
+          "description": "Email of acting administrator"
+        },
+        "action": {
+          "type": "string",
+          "description": "Action descriptor (e.g. USER_SUSPENDED, PREMIUM_GRANTED, SETTINGS_UPDATED)"
+        },
+        "targetType": {
+          "type": "string",
+          "description": "Target entity type (e.g., user, plan, settings, notification)"
+        },
+        "targetId": {
+          "type": "string",
+          "description": "ID of affected entity"
+        },
+        "summary": {
+          "type": "string",
+          "description": "Human-readable summary of change"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Exact server timestamp when action was executed"
+        },
+        "details": {
+          "type": "string",
+          "description": "Serialized JSON of change diff or metadata without credentials"
+        }
+      },
+      "required": ["id", "adminId", "action", "timestamp", "summary"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "User"
+      },
+      "description": "User profiles and subscription entitlements"
+    },
+    "/admins/{adminId}": {
+      "schema": {
+        "$ref": "Admin"
+      },
+      "description": "Authorized administrators list used by security rules"
+    },
+    "/plans/{planId}": {
+      "schema": {
+        "$ref": "Plan"
+      },
+      "description": "Available membership plans and pricing definitions"
+    },
+    "/subscriptions/{subscriptionId}": {
+      "schema": {
+        "$ref": "Subscription"
+      },
+      "description": "Authoritative subscription grants and transaction logs"
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "AppSetting"
+      },
+      "description": "Remote configuration values consumed by JPhone clients"
+    },
+    "/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "Notification"
+      },
+      "description": "Broadcast push notifications sent via FCM"
+    },
+    "/audit_logs/{logId}": {
+      "schema": {
+        "$ref": "AuditLog"
+      },
+      "description": "Immutable audit trails of privileged administrator operations"
+    }
+  }
+}
