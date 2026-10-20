@@ -1,0 +1,21 @@
+name: Build Dist
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: unzip -q ./*.zip -d site
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-panel-dist
+          path: site/dist
+          if-no-files-found: error
